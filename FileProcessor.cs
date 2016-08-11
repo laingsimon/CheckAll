@@ -13,11 +13,19 @@ namespace CheckAll
 		{
 			_messageWriter = messageWriter;
 			_git = git;
+
+			Console.CancelKeyPress += Console_CancelKeyPress;
 		}
 
-		public ProcessOutcome ProcessFile(GitStatusLine file, Request request, int fileCount)
+		private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
 		{
-			_WriteFileName(file, fileCount);
+
+		}
+
+		public ProcessOutcome ProcessFile(GitStatusLine file, Request request, int? fileCount)
+		{
+			if (fileCount != null)
+				_WriteFileName(file, fileCount);
 
 			if (file.UnstagedDeletion)
 				return _TryAgainIfInvalidInput(() => _ProcessDeletion(file, request), () => _WriteFileName(file, fileCount));
@@ -29,9 +37,9 @@ namespace CheckAll
 			throw new InvalidOperationException("File status is not understood - " + file.FileName);
 		}
 
-		private void _WriteFileName(GitStatusLine file, int fileCount)
+		private void _WriteFileName(GitStatusLine file, int? fileCount)
 		{
-			_messageWriter.WriteLine(ConsoleColor.Yellow, $"{file.Index+1}/{fileCount}: {file.FileName}");
+			_messageWriter.WriteLine(ConsoleColor.Yellow, $"{file.Index+1}/{fileCount ?? 0}: {file.FileName}");
 		}
 
 		private ProcessOutcome _TryAgainIfInvalidInput(Func<ProcessOutcome> fileAction, Action writeFileName)
@@ -48,7 +56,7 @@ namespace CheckAll
 
 		private ProcessOutcome _ProcessNewFile(GitStatusLine file, Request request)
 		{
-			var option = _GetOption(ConsoleColor.DarkGreen, "New: <enter>: Add, D: Delete, V: View");
+			var option = _GetOption(ConsoleColor.DarkGreen, "New: <enter>: Add, D: Delete, V: View, M: Modify");
 
 			switch (option)
 			{
@@ -64,10 +72,30 @@ namespace CheckAll
 					return _ProcessNewFile(file, request);
 				case ConsoleKey.DownArrow:
 					return ProcessOutcome.Ignored;
+				case ConsoleKey.M:
+					return _ModifyFileBeforeCommit(file, request);
 				case ConsoleKey.UpArrow:
 					return ProcessOutcome.StepBack;
 				default:
 					return ProcessOutcome.InvalidInput;
+			}
+		}
+
+		private ProcessOutcome _ModifyFileBeforeCommit(GitStatusLine file, Request request)
+		{
+			var localFile = _git.GetFile(file.FileName);
+
+			using (new FileBackup(localFile))
+			{
+				_git.DiffTool(file.FileName);
+
+				Console.TreatControlCAsInput = true;
+
+				var outcome = ProcessFile(file, request, null);
+
+				Console.TreatControlCAsInput = false;
+
+				return outcome;
 			}
 		}
 
@@ -91,7 +119,7 @@ namespace CheckAll
 					break;
 			}
 
-			var option = _GetOption(ConsoleColor.White, "Modified: <enter>: Add, R: Revert");
+			var option = _GetOption(ConsoleColor.White, "Modified: <enter>: Add, R: Revert, M: Modify");
 
 			switch (option)
 			{
@@ -104,6 +132,8 @@ namespace CheckAll
 					return ProcessOutcome.Processed;
 				case ConsoleKey.DownArrow:
 					return ProcessOutcome.Ignored;
+				case ConsoleKey.M:
+					return _ModifyFileBeforeCommit(file, request);
 				case ConsoleKey.UpArrow:
 					return ProcessOutcome.StepBack;
 				default:
