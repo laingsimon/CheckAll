@@ -12,8 +12,6 @@ namespace CheckAll
 
 			try
 			{
-				messageWriter.WriteLine("Git directory: {0}", Environment.CurrentDirectory);
-
 				var git = new Git(
 						new DirectoryInfo(Environment.CurrentDirectory));
 				var application = new Application(
