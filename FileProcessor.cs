@@ -1,0 +1,136 @@
+﻿using System;
+
+namespace CheckAll
+{
+	internal class FileProcessor
+	{
+		private readonly MessageWriter _messageWriter;
+		private readonly Git _git;
+
+		public FileProcessor(
+			MessageWriter messageWriter,
+			Git git)
+		{
+			_messageWriter = messageWriter;
+			_git = git;
+		}
+
+		public ProcessOutcome ProcessFile(GitStatusLine file, Request request, int fileCount)
+		{
+			_WriteFileName(file, fileCount);
+
+			if (file.UnstagedDeletion)
+				return _TryAgainIfInvalidInput(() => _ProcessDeletion(file, request), () => _WriteFileName(file, fileCount));
+			if (file.UnstagedModification)
+				return _TryAgainIfInvalidInput(() => _ProcessModification(file, request), () => _WriteFileName(file, fileCount));
+			if (file.UnstagedFile)
+				return _TryAgainIfInvalidInput(() => _ProcessNewFile(file, request), () => _WriteFileName(file, fileCount));
+
+			throw new InvalidOperationException("File status is not understood - " + file.FileName);
+		}
+
+		private void _WriteFileName(GitStatusLine file, int fileCount)
+		{
+			_messageWriter.WriteLine(ConsoleColor.Yellow, $"{file.Index+1}/{fileCount}: {file.FileName}");
+		}
+
+		private ProcessOutcome _TryAgainIfInvalidInput(Func<ProcessOutcome> fileAction, Action writeFileName)
+		{
+			ProcessOutcome outcome;
+			while ((outcome = fileAction()) == ProcessOutcome.InvalidInput)
+			{
+				_messageWriter.WriteError("Unrecognised input");
+				writeFileName();
+			}
+
+			return outcome;
+		}
+
+		private ProcessOutcome _ProcessNewFile(GitStatusLine file, Request request)
+		{
+			var option = _GetOption(ConsoleColor.DarkGreen, "New: <enter>: Add, D: Delete, V: View");
+
+			switch (option)
+			{
+				case ConsoleKey.Enter:
+					_git.Add(file.FileName);
+					return ProcessOutcome.Processed;
+				case ConsoleKey.D:
+				case ConsoleKey.Delete:
+					_git.GetFile(file.FileName).Delete();
+					return ProcessOutcome.Processed;
+				case ConsoleKey.V:
+					_git.Show(file.FileName, "HEAD");
+					return _ProcessNewFile(file, request);
+				case ConsoleKey.DownArrow:
+					return ProcessOutcome.Ignored;
+				case ConsoleKey.UpArrow:
+					return ProcessOutcome.StepBack;
+				default:
+					return ProcessOutcome.InvalidInput;
+			}
+		}
+
+		private ConsoleKey _GetOption(ConsoleColor foreground, string message)
+		{
+			_messageWriter.WriteLine(foreground, message);
+			var keyInfo = Console.ReadKey();
+
+			return keyInfo.Key;
+		}
+
+		private ProcessOutcome _ProcessModification(GitStatusLine file, Request request)
+		{
+			switch (request.DiffFacility)
+			{
+				case Request.DiffTool.Interactive:
+					_git.DiffTool(file.FileName);
+					break;
+				default:
+					_git.Diff(file.FileName);
+					break;
+			}
+
+			var option = _GetOption(ConsoleColor.White, "Modified: <enter>: Add, R: Revert");
+
+			switch (option)
+			{
+				case ConsoleKey.Enter:
+				case ConsoleKey.Y:
+					_git.Add(file.FileName);
+					return ProcessOutcome.Processed;
+				case ConsoleKey.R:
+					_git.Checkout(file.FileName);
+					return ProcessOutcome.Processed;
+				case ConsoleKey.DownArrow:
+					return ProcessOutcome.Ignored;
+				case ConsoleKey.UpArrow:
+					return ProcessOutcome.StepBack;
+				default:
+					return ProcessOutcome.InvalidInput;
+			}
+		}
+
+		private ProcessOutcome _ProcessDeletion(GitStatusLine file, Request request)
+		{
+			var option = _GetOption(ConsoleColor.DarkRed, "Deleted: <enter>: Add, R: Restore, V: View");
+
+			switch (option)
+			{
+				case ConsoleKey.Enter:
+				case ConsoleKey.Y:
+					_git.Add(file.FileName);
+					return ProcessOutcome.Processed;
+				case ConsoleKey.R:
+					_git.Checkout(file.FileName);
+					return ProcessOutcome.Processed;
+				case ConsoleKey.DownArrow:
+					return ProcessOutcome.Ignored;
+				case ConsoleKey.UpArrow:
+					return ProcessOutcome.StepBack;
+				default:
+					return ProcessOutcome.InvalidInput;
+			}
+		}
+	}
+}
