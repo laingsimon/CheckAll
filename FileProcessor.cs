@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace CheckAll
 {
@@ -14,16 +13,9 @@ namespace CheckAll
 		{
 			_messageWriter = messageWriter;
 			_git = git;
-
-			Console.CancelKeyPress += Console_CancelKeyPress;
 		}
 
-		private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
-		{
-
-		}
-
-		public ProcessOutcome ProcessFile(GitStatusLine file, Request request, int? fileCount)
+			public ProcessOutcome ProcessFile(GitStatusLine file, Request request, int? fileCount)
 		{
 			if (fileCount != null)
 				_WriteFileName(file, fileCount);
