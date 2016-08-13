@@ -8,7 +8,13 @@ namespace CheckAll
 		public void WriteLine(ConsoleColor foreground, string format, params object[] args)
 		{
 			using (new ForegroundColor(foreground))
-				WriteLine(format, args);
+			{
+				var line = string.Format(format, args);
+				if (line.Length == Console.BufferWidth)
+					Console.Out.Write(line);
+				else
+					WriteLine(line);
+			}
 		}
 
 		public void WriteLine(string format, params object[] args)
