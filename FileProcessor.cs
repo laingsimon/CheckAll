@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace CheckAll
 {
@@ -15,14 +16,20 @@ namespace CheckAll
 			_git = git;
 		}
 
-			public ProcessOutcome ProcessFile(GitStatusLine file, Request request, int? fileCount)
+		public ProcessOutcome ProcessFile(GitStatusLine file, Request request, int? fileCount)
 		{
 			if (fileCount != null)
 				_WriteFileName(file, fileCount);
 
+			if (!file.ProcessingReversible && file.Processed)
+			{
+				_GetOption(ConsoleColor.DarkYellow, "Cannot manage file, processing irreversible");
+				return ProcessOutcome.Ignored;
+			}
+
 			if (file.UnstagedDeletion)
 				return _TryAgainIfInvalidInput(() => _ProcessDeletion(file, request), () => _WriteFileName(file, fileCount));
-			if (file.UnstagedModification)
+			if (file.UnstagedModification || file.ModifiedFile)
 				return _TryAgainIfInvalidInput(() => _ProcessModification(file, request), () => _WriteFileName(file, fileCount));
 			if (file.UnstagedFile)
 				return _TryAgainIfInvalidInput(() => _ProcessNewFile(file, request), () => _WriteFileName(file, fileCount));
@@ -53,16 +60,26 @@ namespace CheckAll
 
 		private ProcessOutcome _ProcessNewFile(GitStatusLine file, Request request)
 		{
-			var option = _GetOption(ConsoleColor.DarkGreen, "New: <enter>: Add, D: Delete, V: View, M: Modify");
+			var option = _GetOption(
+				ConsoleColor.DarkGreen,
+				file.Processed
+				  ? "New (staged): <enter>: leave staged, U: Unstage"
+				  : "New: <enter>: Add, D: Delete, V: View, M: Modify");
 
 			switch (option)
 			{
 				case ConsoleKey.Enter:
+					if (file.Processed)
+						return ProcessOutcome.Processed;
+
 					_git.Add(file.FileName);
+					file.Processed = true;
+					file.ProcessingReversible = true;
 					return ProcessOutcome.Processed;
 				case ConsoleKey.D:
 				case ConsoleKey.Delete:
 					_git.GetFile(file).Delete();
+					file.Processed = true;
 					return ProcessOutcome.Processed;
 				case ConsoleKey.V:
 					_messageWriter.WriteLines(_git.GetFile(file), ConsoleColor.DarkGreen, "+ {0}");
@@ -73,6 +90,10 @@ namespace CheckAll
 					return _ModifyFileBeforeCommit(file, request);
 				case ConsoleKey.UpArrow:
 					return ProcessOutcome.StepBack;
+				case ConsoleKey.U:
+					file.Processed = false;
+					_git.Reset(file.FileName, true);
+					return ProcessOutcome.Processed;
 				default:
 					return ProcessOutcome.InvalidInput;
 			}
@@ -84,11 +105,19 @@ namespace CheckAll
 
 			using (new FileBackup(localFile))
 			{
-				_git.DiffTool(file.FileName);
+				if (file.UnstagedFile)
+				{
+					var process = Process.Start(_git.GetFile(file).FullName);
+					process.WaitForExit();
+				}
+				else
+					_git.DiffTool(file.FileName);
 
 				Console.TreatControlCAsInput = true;
 
 				var outcome = ProcessFile(file, request, null);
+				if (outcome == ProcessOutcome.Processed)
+					file.ProcessingReversible = false;
 
 				Console.TreatControlCAsInput = false;
 
@@ -118,21 +147,35 @@ namespace CheckAll
 					break;
 			}
 
-			var option = _GetOption(ConsoleColor.White, "Modified: <enter>: Add, R: Revert, M: Modify");
+			var option = _GetOption(
+				ConsoleColor.White,
+				file.Processed
+				  ? "Modified (staged): <enter> (leave staged), U: Unstage"
+				  : "Modified: <enter>: Add, R: Revert, M: Modify");
 
 			switch (option)
 			{
 				case ConsoleKey.Enter:
 				case ConsoleKey.Y:
+					if (file.Processed)
+						return ProcessOutcome.Processed;
+
 					_git.Add(file.FileName);
+					file.Processed = true;
+					file.ProcessingReversible = true;
 					return ProcessOutcome.Processed;
 				case ConsoleKey.R:
 					_git.Checkout(file.FileName);
+					file.Processed = true;
 					return ProcessOutcome.Processed;
 				case ConsoleKey.DownArrow:
 					return ProcessOutcome.Ignored;
 				case ConsoleKey.M:
 					return _ModifyFileBeforeCommit(file, request);
+				case ConsoleKey.U:
+					_git.Reset(file.FileName, true);
+					file.Processed = false;
+					return ProcessOutcome.Processed;
 				case ConsoleKey.UpArrow:
 					return ProcessOutcome.StepBack;
 				default:
@@ -142,16 +185,23 @@ namespace CheckAll
 
 		private ProcessOutcome _ProcessDeletion(GitStatusLine file, Request request)
 		{
-			var option = _GetOption(ConsoleColor.DarkRed, "Deleted: <enter>: Add, R: Restore, V: View");
+			var option = _GetOption(
+				ConsoleColor.DarkRed,
+				file.Processed
+				  ? "Deleted (staged): <enter> <leave staged), U: Unstage"
+				  : "Deleted: <enter>: Add, R: Restore, V: View");
 
 			switch (option)
 			{
 				case ConsoleKey.Enter:
 				case ConsoleKey.Y:
 					_git.Add(file.FileName);
+					file.Processed = true;
+					file.ProcessingReversible = true;
 					return ProcessOutcome.Processed;
 				case ConsoleKey.R:
 					_git.Checkout(file.FileName);
+					file.Processed = true;
 					return ProcessOutcome.Processed;
 				case ConsoleKey.DownArrow:
 					return ProcessOutcome.Ignored;
@@ -161,6 +211,10 @@ namespace CheckAll
 					else
 						_git.DiffTool(file.FileName);
 					return _ProcessDeletion(file, request);
+				case ConsoleKey.U:
+					_git.Reset(file.FileName, true);
+					file.Processed = false;
+					return ProcessOutcome.Processed;
 				case ConsoleKey.UpArrow:
 					return ProcessOutcome.StepBack;
 				default:

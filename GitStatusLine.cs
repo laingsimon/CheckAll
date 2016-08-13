@@ -8,15 +8,25 @@
 		{
 			_line = line;
 			Index = index;
+
+			if (ModifiedFile)
+			{
+				Processed = true;
+				ProcessingReversible = false;
+			}
 		}
 
 		public bool IgnoredFile => _IndexMneumonic('!') && _WorkingTreeMneumonic('!');
 		public bool UnstagedFile => _IndexMneumonic('?') && _WorkingTreeMneumonic('?');
 		public bool UnstagedModification => _WorkingTreeMneumonic('M') && _IndexMneumonic(' ');
 		public bool UnstagedDeletion => _WorkingTreeMneumonic('D') && _IndexMneumonic(' ');
+		public bool ModifiedFile => _WorkingTreeMneumonic('M') && (_IndexMneumonic('M') || _IndexMneumonic('A'));
 
 		public int Index { get; }
 		public string FileName => _line.Substring(2).Trim();
+
+		public bool Processed { get; set; }
+		public bool ProcessingReversible { get; set; }
 
 		public bool _IndexMneumonic(char mneumonic)
 		{

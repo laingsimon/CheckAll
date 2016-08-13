@@ -136,6 +136,24 @@ namespace CheckAll
 			process.WaitForExit();
 		}
 
+		internal void Reset(string fileName, bool quiet)
+		{
+			var process = new Process
+			{
+				StartInfo = new ProcessStartInfo
+				{
+					FileName = _gitExecutable.FullName,
+					Arguments = $"reset -- \"{fileName}\"",
+					WorkingDirectory = _repository.FullName,
+					UseShellExecute = false,
+					RedirectStandardOutput = quiet
+				}
+			};
+
+			process.Start();
+			process.WaitForExit();
+		}
+
 		internal void DiffTool(string fileName)
 		{
 			var process = new Process

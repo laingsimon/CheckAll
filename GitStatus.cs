@@ -19,7 +19,7 @@ namespace CheckAll
 			{
 				var file = new GitStatusLine(line, index);
 
-				if (file.UnstagedDeletion || file.UnstagedFile || file.UnstagedModification)
+				if (file.UnstagedDeletion || file.UnstagedFile || file.UnstagedModification || file.ModifiedFile)
 				{
 					yield return file;
 					index++;
@@ -29,6 +29,6 @@ namespace CheckAll
 
 		public int UnstagedFiles => GetFiles().Count(f => f.UnstagedFile);
 		public int UnstagedDeletions => GetFiles().Count(f => f.UnstagedDeletion);
-		public int UnstagedModifications => GetFiles().Count(f => f.UnstagedModification);
+		public int UnstagedModifications => GetFiles().Count(f => f.UnstagedModification || f.ModifiedFile);
 	}
 }
