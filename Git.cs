@@ -188,5 +188,33 @@ namespace CheckAll
 			process.Start();
 			process.WaitForExit();
 		}
+
+		internal bool IsText(string fileName)
+		{
+			var lines = new List<string>();
+			var fileExe = _gitExecutable.Directory.Parent.SubDirectory("usr").SubDirectory("bin").File("file.exe");
+
+			var process = new Process
+			{
+				StartInfo = new ProcessStartInfo
+				{
+					FileName = fileExe.FullName,
+					Arguments = $"--mime \"{fileName}\"",
+					CreateNoWindow = true,
+					RedirectStandardOutput = true,
+					UseShellExecute = false,
+					WorkingDirectory = _repository.FullName
+				}
+			};
+			process.OutputDataReceived += (sender, args) => lines.Add(args.Data);
+
+			process.Start();
+			process.BeginOutputReadLine();
+
+			process.WaitForExit();
+
+			var mime = new FileMimeDetail(lines.Single(l => l != null));
+			return mime.Charset != "binary";
+		}
 	}
 }

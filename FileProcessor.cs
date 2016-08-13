@@ -60,13 +60,18 @@ namespace CheckAll
 
 		private ProcessOutcome _ProcessNewFile(GitStatusLine file, Request request)
 		{
+			var isText = _git.IsText(file.FileName);
+			var modifyOption = isText
+				? ", V: View, M: Modify"
+				: "";
+
 			var option = _GetOption(
 				file.Processed
 				  ? ConsoleColor.Green
 				  : ConsoleColor.DarkGreen,
 				file.Processed
 				  ? "New (staged): <enter>: leave staged, U: Unstage"
-				  : "New: <enter>: Add, D: Delete, V: View, M: Modify");
+				  : $"New: <enter>: Add, D: Delete{modifyOption}");
 
 			switch (option)
 			{
@@ -85,10 +90,16 @@ namespace CheckAll
 					file.Processed = true;
 					return ProcessOutcome.Processed;
 				case ConsoleKey.V:
+					if (!isText)
+						return ProcessOutcome.InvalidInput;
+
 					_messageWriter.WriteLines(_git.GetFile(file), ConsoleColor.DarkGreen, "+ {0}");
 					return _ProcessNewFile(file, request);
 				case ConsoleKey.M:
-					return _ModifyFileBeforeCommit(file, request);
+					if (isText)
+						return _ModifyFileBeforeCommit(file, request);
+
+					return ProcessOutcome.InvalidInput;
 				case ConsoleKey.U:
 					file.Processed = false;
 					_git.Reset(file.FileName, true);
@@ -142,15 +153,24 @@ namespace CheckAll
 
 		private ProcessOutcome _ProcessModification(GitStatusLine file, Request request)
 		{
-			switch (request.DiffFacility)
+			var isText = _git.IsText(file.FileName);
+
+			if (isText)
 			{
-				case Request.DiffTool.Interactive:
-					_git.DiffTool(file.FileName);
-					break;
-				default:
-					_git.Diff(file.FileName);
-					break;
+				switch (request.DiffFacility)
+				{
+					case Request.DiffTool.Interactive:
+						_git.DiffTool(file.FileName);
+						break;
+					default:
+						_git.Diff(file.FileName);
+						break;
+				}
 			}
+
+			var modifyOption = isText
+				? ", M: Modify"
+				: "";
 
 			var option = _GetOption(
 				file.Processed
@@ -158,7 +178,7 @@ namespace CheckAll
 				  : ConsoleColor.DarkBlue,
 				file.Processed
 				  ? "Modified (staged): <enter> (leave staged), U: Unstage"
-				  : "Modified: <enter>: Add, R: Revert, M: Modify");
+				  : $"Modified: <enter>: Add, R: Revert{modifyOption}");
 
 			switch (option)
 			{
@@ -176,7 +196,9 @@ namespace CheckAll
 					file.Processed = true;
 					return ProcessOutcome.Processed;
 				case ConsoleKey.M:
-					return _ModifyFileBeforeCommit(file, request);
+					if (isText)
+						return _ModifyFileBeforeCommit(file, request);
+					return ProcessOutcome.InvalidInput;
 				case ConsoleKey.U:
 					_git.Reset(file.FileName, true);
 					file.Processed = false;
