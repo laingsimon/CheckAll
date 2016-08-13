@@ -40,7 +40,11 @@ namespace CheckAll
 
 		private void _WriteFileName(GitStatusLine file, int? fileCount)
 		{
-			_messageWriter.WriteLine(ConsoleColor.Yellow, $"{file.Index+1}/{fileCount ?? 0}: {file.FileName}");
+			var lineWidth = _messageWriter.GetLineWidth();
+			var stringPrefix = $"{file.Index + 1}/{fileCount ?? 0}: ";
+
+			var fileName = file.FileName.TrimToMaximumLength(lineWidth - stringPrefix.Length, "...");
+			_messageWriter.WriteLine(ConsoleColor.Yellow, $"{stringPrefix}{fileName}");
 		}
 
 		private ProcessOutcome _TryAgainIfInvalidInput(Func<ProcessOutcome> fileAction, Action writeFileName)

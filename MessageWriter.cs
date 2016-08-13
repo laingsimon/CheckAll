@@ -45,5 +45,10 @@ namespace CheckAll
 				}
 			}
 		}
+
+		internal int GetLineWidth()
+		{
+			return Console.BufferWidth;
+		}
 	}
 }
