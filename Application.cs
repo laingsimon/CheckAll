@@ -51,6 +51,9 @@ namespace CheckAll
 				}
 			}
 
+			_writer.WriteLine(ConsoleColor.Blue, new string('_', _writer.GetLineWidth()));
+			_writer.WriteLine("");
+
 			_git.Status(request);
 		}
 	}

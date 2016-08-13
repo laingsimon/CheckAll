@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 
 namespace CheckAll
 {
@@ -9,7 +10,9 @@ namespace CheckAll
 		{
 			using (new ForegroundColor(foreground))
 			{
-				var line = string.Format(format, args);
+				var line = args.Any()
+					? string.Format(format, args)
+					: format;
 				if (line.Length == Console.BufferWidth)
 					Console.Out.Write(line);
 				else
