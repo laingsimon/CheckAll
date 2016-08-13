@@ -61,7 +61,9 @@ namespace CheckAll
 		private ProcessOutcome _ProcessNewFile(GitStatusLine file, Request request)
 		{
 			var option = _GetOption(
-				ConsoleColor.DarkGreen,
+				file.Processed
+				  ? ConsoleColor.Green
+				  : ConsoleColor.DarkGreen,
 				file.Processed
 				  ? "New (staged): <enter>: leave staged, U: Unstage"
 				  : "New: <enter>: Add, D: Delete, V: View, M: Modify");
@@ -151,7 +153,9 @@ namespace CheckAll
 			}
 
 			var option = _GetOption(
-				ConsoleColor.White,
+				file.Processed
+				  ? ConsoleColor.Blue
+				  : ConsoleColor.DarkBlue,
 				file.Processed
 				  ? "Modified (staged): <enter> (leave staged), U: Unstage"
 				  : "Modified: <enter>: Add, R: Revert, M: Modify");
@@ -185,7 +189,9 @@ namespace CheckAll
 		private ProcessOutcome _ProcessDeletion(GitStatusLine file, Request request)
 		{
 			var option = _GetOption(
-				ConsoleColor.DarkRed,
+				file.Processed
+				  ? ConsoleColor.Red
+				  : ConsoleColor.DarkRed,
 				file.Processed
 				  ? "Deleted (staged): <enter> <leave staged), U: Unstage"
 				  : "Deleted: <enter>: Add, R: Restore, V: View");

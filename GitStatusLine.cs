@@ -12,7 +12,7 @@
 			if (ModifiedFile)
 			{
 				Processed = true;
-				ProcessingReversible = false;
+				ProcessingReversible = true;
 			}
 		}
 
