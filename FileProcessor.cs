@@ -101,6 +101,8 @@ namespace CheckAll
 			_messageWriter.WriteLine(foreground, message);
 			var keyInfo = Console.ReadKey();
 
+			Console.SetCursorPosition(0, Console.CursorTop);
+
 			return keyInfo.Key;
 		}
 
