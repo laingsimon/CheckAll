@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace CheckAll
 {
@@ -68,7 +69,7 @@ namespace CheckAll
 					_git.GetFile(file.FileName).Delete();
 					return ProcessOutcome.Processed;
 				case ConsoleKey.V:
-					_git.Show(file.FileName, "HEAD");
+					_messageWriter.WriteLines(_git.GetFile(file.FileName), ConsoleColor.DarkGreen, "+ {0}");
 					return _ProcessNewFile(file, request);
 				case ConsoleKey.DownArrow:
 					return ProcessOutcome.Ignored;
@@ -156,6 +157,12 @@ namespace CheckAll
 					return ProcessOutcome.Processed;
 				case ConsoleKey.DownArrow:
 					return ProcessOutcome.Ignored;
+				case ConsoleKey.V:
+					if (request.DiffFacility == Request.DiffTool.CommandLine)
+						_git.Diff(file.FileName);
+					else
+						_git.DiffTool(file.FileName);
+					return _ProcessDeletion(file, request);
 				case ConsoleKey.UpArrow:
 					return ProcessOutcome.StepBack;
 				default:

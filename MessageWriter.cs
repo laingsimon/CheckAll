@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace CheckAll
 {
@@ -25,6 +26,24 @@ namespace CheckAll
 		{
 			using (new ForegroundColor(ConsoleColor.Red))
 				WriteLine(format, args);
+		}
+
+		internal void WriteLines(FileInfo fileInfo, ConsoleColor foregroundColor, string lineFormat = null)
+		{
+			using (var fileStream = fileInfo.OpenRead())
+			using (var reader = new StreamReader(fileStream))
+			using (new ForegroundColor(foregroundColor))
+			{
+				string line = null;
+				while ((line = reader.ReadLine()) != null)
+				{
+					var lineToWrite = lineFormat == null
+						? line
+						: string.Format(lineFormat, line);
+
+					Console.Out.WriteLine(lineToWrite);
+				}
+			}
 		}
 	}
 }

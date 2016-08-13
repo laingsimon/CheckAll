@@ -126,7 +126,7 @@ namespace CheckAll
 				StartInfo = new ProcessStartInfo
 				{
 					FileName = _gitExecutable.FullName,
-					Arguments = $"--no-pager diff \"{fileName}\"",
+					Arguments = $"--no-pager diff -- \"{fileName}\"",
 					WorkingDirectory = _repository.FullName,
 					UseShellExecute = false
 				}
@@ -143,7 +143,7 @@ namespace CheckAll
 				StartInfo = new ProcessStartInfo
 				{
 					FileName = _gitExecutable.FullName,
-					Arguments = $"difftool --no-prompt \"{fileName}\"",
+					Arguments = $"difftool --no-prompt -- \"{fileName}\"",
 					WorkingDirectory = _repository.FullName,
 					CreateNoWindow = true,
 					UseShellExecute = false
