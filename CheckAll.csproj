@@ -51,6 +51,7 @@
     <Compile Include="GitStatus.cs" />
     <Compile Include="GitStatusLine.cs" />
     <Compile Include="IOExtensions.cs" />
+    <Compile Include="KeyExtensions.cs" />
     <Compile Include="MessageWriter.cs" />
     <Compile Include="ProcessOutcome.cs" />
     <Compile Include="Program.cs" />

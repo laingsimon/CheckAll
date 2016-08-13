@@ -46,6 +46,23 @@ namespace CheckAll
 			return new GitStatus(lines.Where(l => l != null).ToArray());
 		}
 
+		internal void Status(GitStatusLine file, string switches = null)
+		{
+			var process = new Process
+			{
+				StartInfo = new ProcessStartInfo
+				{
+					FileName = _gitExecutable.FullName,
+					Arguments = $"status {switches} \"{file.FileName}\"",
+					WorkingDirectory = _repository.FullName,
+					UseShellExecute = false
+				}
+			};
+
+			process.Start();
+			process.WaitForExit();
+		}
+
 		internal void Status(Request request)
 		{
 			var process = new Process

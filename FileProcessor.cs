@@ -23,8 +23,8 @@ namespace CheckAll
 
 			if (!file.ProcessingReversible && file.Processed)
 			{
-				_GetOption(ConsoleColor.DarkYellow, "Cannot manage file, processing irreversible");
-				return ProcessOutcome.Ignored;
+				_git.Status(file);
+				return _GetOption(ConsoleColor.DarkYellow, "Cannot manage file, processing irreversible").GetOutcome();
 			}
 
 			if (file.UnstagedDeletion)
@@ -69,6 +69,7 @@ namespace CheckAll
 			switch (option)
 			{
 				case ConsoleKey.Enter:
+				case ConsoleKey.Y:
 					if (file.Processed)
 						return ProcessOutcome.Processed;
 
@@ -84,18 +85,14 @@ namespace CheckAll
 				case ConsoleKey.V:
 					_messageWriter.WriteLines(_git.GetFile(file), ConsoleColor.DarkGreen, "+ {0}");
 					return _ProcessNewFile(file, request);
-				case ConsoleKey.DownArrow:
-					return ProcessOutcome.Ignored;
 				case ConsoleKey.M:
 					return _ModifyFileBeforeCommit(file, request);
-				case ConsoleKey.UpArrow:
-					return ProcessOutcome.StepBack;
 				case ConsoleKey.U:
 					file.Processed = false;
 					_git.Reset(file.FileName, true);
 					return ProcessOutcome.Processed;
 				default:
-					return ProcessOutcome.InvalidInput;
+					return option.GetOutcome();
 			}
 		}
 
@@ -174,18 +171,14 @@ namespace CheckAll
 					_git.Checkout(file.FileName);
 					file.Processed = true;
 					return ProcessOutcome.Processed;
-				case ConsoleKey.DownArrow:
-					return ProcessOutcome.Ignored;
 				case ConsoleKey.M:
 					return _ModifyFileBeforeCommit(file, request);
 				case ConsoleKey.U:
 					_git.Reset(file.FileName, true);
 					file.Processed = false;
 					return ProcessOutcome.Processed;
-				case ConsoleKey.UpArrow:
-					return ProcessOutcome.StepBack;
 				default:
-					return ProcessOutcome.InvalidInput;
+					return option.GetOutcome();
 			}
 		}
 
@@ -209,8 +202,6 @@ namespace CheckAll
 					_git.Checkout(file.FileName);
 					file.Processed = true;
 					return ProcessOutcome.Processed;
-				case ConsoleKey.DownArrow:
-					return ProcessOutcome.Ignored;
 				case ConsoleKey.V:
 					if (request.DiffFacility == Request.DiffTool.CommandLine)
 						_git.Diff(file.FileName);
@@ -221,10 +212,8 @@ namespace CheckAll
 					_git.Reset(file.FileName, true);
 					file.Processed = false;
 					return ProcessOutcome.Processed;
-				case ConsoleKey.UpArrow:
-					return ProcessOutcome.StepBack;
 				default:
-					return ProcessOutcome.InvalidInput;
+					return option.GetOutcome();
 			}
 		}
 	}
