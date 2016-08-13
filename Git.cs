@@ -80,9 +80,9 @@ namespace CheckAll
 			process.WaitForExit();
 		}
 
-		internal FileInfo GetFile(string fileName)
+		internal FileInfo GetFile(GitStatusLine file)
 		{
-			return _repository.File(fileName.Replace("/", "\\"));
+			return _repository.File(file.FileName.Replace("/", "\\"));
 		}
 
 		internal void Show(string fileName, string gitRef)

@@ -66,10 +66,10 @@ namespace CheckAll
 					return ProcessOutcome.Processed;
 				case ConsoleKey.D:
 				case ConsoleKey.Delete:
-					_git.GetFile(file.FileName).Delete();
+					_git.GetFile(file).Delete();
 					return ProcessOutcome.Processed;
 				case ConsoleKey.V:
-					_messageWriter.WriteLines(_git.GetFile(file.FileName), ConsoleColor.DarkGreen, "+ {0}");
+					_messageWriter.WriteLines(_git.GetFile(file), ConsoleColor.DarkGreen, "+ {0}");
 					return _ProcessNewFile(file, request);
 				case ConsoleKey.DownArrow:
 					return ProcessOutcome.Ignored;
@@ -84,7 +84,7 @@ namespace CheckAll
 
 		private ProcessOutcome _ModifyFileBeforeCommit(GitStatusLine file, Request request)
 		{
-			var localFile = _git.GetFile(file.FileName);
+			var localFile = _git.GetFile(file);
 
 			using (new FileBackup(localFile))
 			{
