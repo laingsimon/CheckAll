@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 
 namespace CheckAll
 {
@@ -17,6 +18,12 @@ namespace CheckAll
 		public void Dispose()
 		{
 			File.WriteAllBytes(_file.FullName, _originalContent);
+		}
+
+		internal bool IsSameAsCurrent()
+		{
+			var currentContent = File.ReadAllBytes(_file.FullName);
+			return currentContent.SequenceEqual(_originalContent);
 		}
 	}
 }

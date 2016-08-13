@@ -103,7 +103,7 @@ namespace CheckAll
 		{
 			var localFile = _git.GetFile(file);
 
-			using (new FileBackup(localFile))
+			using (var backup = new FileBackup(localFile))
 			{
 				if (file.UnstagedFile)
 				{
@@ -112,6 +112,12 @@ namespace CheckAll
 				}
 				else
 					_git.DiffTool(file.FileName);
+
+				if (backup.IsSameAsCurrent())
+				{
+					_messageWriter.WriteWarning("File has not changed");
+					return ProcessFile(file, request, null);
+				}
 
 				Console.TreatControlCAsInput = true;
 
