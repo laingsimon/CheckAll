@@ -102,6 +102,11 @@ namespace CheckAll
 			return _repository.File(file.FileName.Replace("/", "\\"));
 		}
 
+		internal DirectoryInfo GetDirectory(GitStatusLine directory)
+		{
+			return _repository.SubDirectory(directory.FileName.Replace("/", "\\"));
+		}
+
 		internal void Show(string fileName, string gitRef)
 		{
 			var process = new Process
@@ -215,6 +220,26 @@ namespace CheckAll
 
 			var mime = new FileMimeDetail(lines.Single(l => l != null));
 			return mime.Charset != "binary";
+		}
+
+		internal bool Ignored(string fileName)
+		{
+			var process = new Process
+			{
+				StartInfo = new ProcessStartInfo
+				{
+					FileName = _gitExecutable.FullName,
+					Arguments = $"check-ignore  \"{fileName}\"",
+					WorkingDirectory = _repository.FullName,
+					CreateNoWindow = true,
+					UseShellExecute = false
+				}
+			};
+
+			process.Start();
+			process.WaitForExit();
+
+			return process.ExitCode == 0;
 		}
 	}
 }

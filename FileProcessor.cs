@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 
 namespace CheckAll
 {
@@ -60,6 +61,9 @@ namespace CheckAll
 
 		private ProcessOutcome _ProcessNewFile(GitStatusLine file, Request request)
 		{
+			if (file.FileName.EndsWith("/"))
+				return _ProcessNewDirectory(file, request);
+
 			var isText = _git.IsText(file.FileName);
 			var modifyOption = isText
 				? ", V: View, M: Modify"
@@ -106,6 +110,66 @@ namespace CheckAll
 					return ProcessOutcome.Processed;
 				default:
 					return option.GetOutcome();
+			}
+		}
+
+		private ProcessOutcome _ProcessNewDirectory(GitStatusLine file, Request request)
+		{
+			var option = _GetOption(
+				file.Processed
+				  ? ConsoleColor.Green
+				  : ConsoleColor.DarkGreen,
+				$"New: <enter>: Add, D: Delete, V: View, *: View (including ignored files/dirs)");
+
+			switch (option)
+			{
+				case ConsoleKey.Enter:
+				case ConsoleKey.Y:
+					if (file.Processed)
+						return ProcessOutcome.Processed;
+
+					_git.Add(file.FileName);
+					file.Processed = true;
+					file.ProcessingReversible = true;
+					return ProcessOutcome.Processed;
+				case ConsoleKey.D:
+				case ConsoleKey.Delete:
+					_git.GetDirectory(file).DeleteRecursively();
+					file.Processed = true;
+					return ProcessOutcome.Processed;
+				case ConsoleKey.U:
+					file.Processed = false;
+					_git.Reset(file.FileName, true);
+					return ProcessOutcome.Processed;
+				case ConsoleKey.V:
+				case ConsoleKey.Multiply:
+					var directory = _git.GetDirectory(file);
+
+					var showIgnored = option == ConsoleKey.Multiply;
+					_PresentFilesAndDirectories(directory, true, showIgnored: showIgnored);
+					return _ProcessNewDirectory(file, request);
+				default:
+					return option.GetOutcome();
+			}
+		}
+
+		private void _PresentFilesAndDirectories(DirectoryInfo directory, bool showHeading, bool showIgnored = false, string prefix = "")
+		{
+			var files = directory.GetFiles();
+			var directories = directory.GetDirectories();
+			if (showHeading)
+				_messageWriter.WriteLine(ConsoleColor.Green, "{0} file/s | {1} directory/s", files.Length, directories.Length);
+			foreach (var fileInDirectory in files)
+			{
+				var ignored = _git.Ignored(prefix + fileInDirectory.Name);
+				if (showIgnored || !ignored)
+					_messageWriter.WriteLine(ignored ? ConsoleColor.DarkGreen : ConsoleColor.Green, " - {0}{1}", prefix, fileInDirectory.Name);
+			}
+			foreach (var subDirectory in directories)
+			{
+				var ignored = _git.Ignored(prefix + subDirectory.Name + "/");
+				if (showIgnored || !ignored)
+					_PresentFilesAndDirectories(directory.SubDirectory(subDirectory.Name), false, showIgnored, subDirectory.Name + "/");
 			}
 		}
 
