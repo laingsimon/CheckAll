@@ -174,19 +174,16 @@ namespace CheckAll
 
 			var option = _GetOption(
 				file.Processed
-				  ? ConsoleColor.Blue
-				  : ConsoleColor.DarkBlue,
+				  ? ConsoleColor.Cyan
+				  : ConsoleColor.DarkCyan,
 				file.Processed
-				  ? "Modified (staged): <enter> (leave staged), U: Unstage"
+				  ? "Modified (staged): <enter> (stage additional amendments), U: Unstage"
 				  : $"Modified: <enter>: Add, R: Revert{modifyOption}");
 
 			switch (option)
 			{
 				case ConsoleKey.Enter:
 				case ConsoleKey.Y:
-					if (file.Processed)
-						return ProcessOutcome.Processed;
-
 					_git.Add(file.FileName);
 					file.Processed = true;
 					file.ProcessingReversible = true;
