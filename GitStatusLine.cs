@@ -23,7 +23,7 @@
 		public bool ModifiedFile => _WorkingTreeMneumonic('M') && (_IndexMneumonic('M') || _IndexMneumonic('A'));
 
 		public int Index { get; }
-		public string FileName => _line.Substring(2).Trim();
+		public string FileName => _line.Substring(2).Trim().Trim('"');
 
 		public bool Processed { get; set; }
 		public bool ProcessingReversible { get; set; }
