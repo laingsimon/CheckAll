@@ -6,14 +6,18 @@ namespace CheckAll
 {
 	internal class MessageWriter
 	{
-		public void WriteLine(ConsoleColor foreground, string format, params object[] args)
+        private const int defaultBufferWidth = 80;
+
+        private static bool? bufferWidthAvailable;
+
+        public void WriteLine(ConsoleColor foreground, string format, params object[] args)
 		{
 			using (new ForegroundColor(foreground))
 			{
 				var line = args.Any()
 					? string.Format(format, args)
 					: format;
-				if (line.Length == Console.BufferWidth)
+				if (line.Length == GetLineWidth())
 					Console.Out.Write(line);
 				else
 					WriteLine(line);
@@ -55,9 +59,23 @@ namespace CheckAll
 			}
 		}
 
-		internal int GetLineWidth()
+        internal int GetLineWidth()
 		{
-			return Console.BufferWidth;
-		}
-	}
+            if (bufferWidthAvailable != false)
+            {
+                try
+                {
+                    var width = Console.BufferWidth;
+                    bufferWidthAvailable = true;
+                    return width;
+                }
+                catch (Exception)
+                {
+                    bufferWidthAvailable = false;
+                }
+            }
+
+            return defaultBufferWidth;
+        }
+    }
 }
